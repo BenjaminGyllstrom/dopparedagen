@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nedräkning till dopparedagen</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-color: #fee2e2;
+        color: #065f46;
+        padding: 16px;
+        margin: 0;
+      }
+
+      @media (min-width: 640px) {
+        body {
+          padding: 24px;
+        }
+      }
+      @media (min-width: 768px) {
+        body {
+          padding: 32px;
+        }
+      }
+
+      h1 {
+        font-size: 2.25rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+      }
+
+      .speak-button {
+        padding: 0.5rem 1rem;
+        color: white;
+        border: none;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-size: 1rem;
+      }
+
+      .speak-button.green {
+        background-color: #16a34a;
+      }
+      .speak-button.green:hover {
+        background-color: #15803d;
+      }
+
+      .speak-button.red {
+        background-color: #dc2626;
+      }
+      .speak-button.red:hover {
+        background-color: #b91c1c;
+      }
+
+      .countdown-text {
+        font-size: 1.25rem;
+        text-align: center;
+        max-width: 672px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Nedräkning till dopparedagen</h1>
+    <button id="speakButton" class="speak-button green">Läs upp högt</button>
+    <p id="countdownText" class="countdown-text"></p>
+
+    <script>
+      let countdownText = "";
+      let isSpeaking = false;
+
+      const countdownTextElement = document.getElementById("countdownText");
+      const speakButton = document.getElementById("speakButton");
+
+      function calculateDaysUntilChristmas() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        let christmas = new Date(currentYear, 11, 24); // December 24 (month is 0-indexed)
+
+        // If Christmas has already passed, use next year's date
+        if (now > christmas) {
+          christmas = new Date(currentYear + 1, 11, 24);
+        }
+
+        const timeDiff = christmas.getTime() - now.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        if (daysDiff === 0) {
+          countdownText = "Idag är det dopparedagen!";
+        } else if (daysDiff === 1) {
+          countdownText = "Imorgon är det dopparedagen!";
+        } else {
+          const danFore = "dan före ".repeat(daysDiff - 1).trim();
+          countdownText = `Det är ${danFore} dan före dopparedagen`;
+        }
+
+        updateDOM();
+      }
+
+      // Update the countdown text on the page
+      function updateDOM() {
+        countdownTextElement.textContent = countdownText;
+      }
+
+      function speakText() {
+        if ("speechSynthesis" in window) {
+          const utterance = new SpeechSynthesisUtterance(countdownText);
+          utterance.lang = "sv-SE";
+
+          utterance.onstart = () => {
+            isSpeaking = true;
+            updateButton();
+          };
+
+          utterance.onend = () => {
+            isSpeaking = false;
+            updateButton();
+          };
+
+          utterance.onerror = () => {
+            isSpeaking = false;
+            updateButton();
+          };
+
+          speechSynthesis.speak(utterance);
+        } else {
+          console.log("Text-to-speech not supported in this browser.");
+        }
+      }
+
+      function stopSpeaking() {
+        if ("speechSynthesis" in window) {
+          speechSynthesis.cancel();
+          isSpeaking = false;
+          updateButton();
+        }
+      }
+
+      function updateButton() {
+        if (isSpeaking) {
+          speakButton.textContent = "Stoppa uppläsningen";
+          speakButton.classList.remove("green");
+          speakButton.classList.add("red");
+        } else {
+          speakButton.textContent = "Läs upp högt";
+          speakButton.classList.remove("red");
+          speakButton.classList.add("green");
+        }
+      }
+
+      speakButton.addEventListener("click", () => {
+        if (!isSpeaking) {
+          speakText();
+        } else {
+          stopSpeaking();
+        }
+      });
+
+      calculateDaysUntilChristmas();
+
+      setInterval(calculateDaysUntilChristmas, 86400000);
+
+      // Cancel speech synthesis when the page is unloaded
+      window.addEventListener("beforeunload", () => {
+        if ("speechSynthesis" in window) {
+          speechSynthesis.cancel();
+        }
+      });
+    </script>
+  </body>
+</html>
